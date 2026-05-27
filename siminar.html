@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="ku">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ICE POP - خواردنی خێرا | خەرجی ڕۆژانەی چێشتخانە</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #fff9f0 0%, #ffe6d5 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: "🍔🌭🍟 ICE POP 🍕🥙🍔";
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 100px;
+            font-weight: bold;
+            color: rgba(255, 200, 150, 0.15);
+            white-space: pre;
+            pointer-events: none;
+            z-index: 0;
+            transform: rotate(-5deg);
+            font-family: monospace;
+        }
+
+        body::after {
+            content: "🍔🍟🌭🍕🥙🔥🍔";
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 70px;
+            color: rgba(255, 180, 100, 0.06);
+            pointer-events: none;
+            z-index: 0;
+            white-space: pre;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-header {
+            background: linear-gradient(135deg, #ff7e5e, #feb47b);
+            border-radius: 48px;
+            padding: 30px 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-header h1 {
+            font-size: 3.2rem;
+            letter-spacing: 2px;
+            color: white;
+            text-shadow: 3px 3px 0 #d2691e;
+            font-weight: 800;
+        }
+
+        .hero-header p {
+            font-size: 1.4rem;
+            color: #fff3e0;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+
+        /* دوو دووگمەی لۆگین لە لای چەپ */
+        .login-buttons-wrapper {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn-login {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.25s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-login:hover {
+            background: #e67e22;
+            transform: scale(1.02);
+        }
+        
+        .btn-login.delete-login {
+            background: #8e44ad;
+        }
+        
+        .btn-login.delete-login:hover {
+            background: #c0392b;
+        }
+
+        /* کۆی گشتی کارت */
+        .total-stats-section {
+            background: white;
+            border-radius: 48px;
+            padding: 20px 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+            border: 1px solid #ffe0b5;
+        }
+
+        .total-header {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            border-bottom: 2px dashed #ffce9e;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .total-header h2 {
+            font-size: 1.7rem;
+            color: #c0392b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .total-amount {
+            font-size: 2.4rem;
+            font-weight: 800;
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .total-badge {
+            background: #2c3e50;
+            padding: 8px 20px;
+            border-radius: 80px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .range-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+            align-items: center;
+        }
+
+        .range-btn {
+            background: #fce4c5;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 60px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #a6491c;
+        }
+
+        .range-btn.active {
+            background: #e67e22;
+            color: white;
+            box-shadow: 0 4px 12px rgba(230,126,34,0.3);
+        }
+
+        .custom-range {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff1e2;
+            padding: 6px 16px;
+            border-radius: 60px;
+        }
+
+        .custom-range input {
+            width: 75px;
+            padding: 8px;
+            border-radius: 50px;
+            border: 1px solid #ffb46b;
+            text-align: center;
+        }
+
+        .apply-range {
+            background: #f39c12;
+            border: none;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .filter-section {
+            background: rgba(255,255,240,0.95);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 20px 30px;
+            margin-bottom: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+
+        .date-filter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        .date-filter label {
+            font-weight: 600;
+            color: #a0522d;
+        }
+
+        input[type="date"] {
+            border: 1px solid #ffb485;
+            padding: 8px 12px;
+            border-radius: 40px;
+            font-size: 1rem;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-filter {
+            background: #ffb347;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #2d2b26;
+        }
+
+        .btn-filter.active {
+            background: #e67e22;
+            color: white;
+            box-shadow: 0 4px 10px #e67e2270;
+        }
+
+        .expenses-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .expense-card {
+            background: white;
+            border-radius: 32px;
+            padding: 20px 28px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 12px 28px -8px rgba(0,0,0,0.1);
+            transition: 0.2s;
+            border-left: 12px solid #f39c12;
+            cursor: pointer;
+        }
+
+        .expense-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 24px 36px -12px rgba(0,0,0,0.2);
+            background: #fffef7;
+        }
+
+        .expense-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 28px;
+            object-fit: cover;
+            background: #f7e9dd;
+            border: 2px solid #ffd89a;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .expense-img:hover {
+            transform: scale(1.02);
+        }
+
+        .expense-info {
+            flex: 3;
+            min-width: 180px;
+        }
+
+        .expense-info h3 {
+            font-size: 1.5rem;
+            color: #c0392b;
+        }
+
+        .expense-info p {
+            color: #7f8c8d;
+            margin: 4px 0;
+        }
+
+        .expense-price {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #e67e22;
+            background: #fef5e8;
+            padding: 6px 18px;
+            border-radius: 40px;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+            transform: scale(0.96);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: linear-gradient(125deg, #fffaf2, #fff2e6);
+            border-radius: 64px;
+            max-width: 550px;
+            width: 90%;
+            padding: 32px 28px;
+            position: relative;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.3);
+            border: 2px solid #ffbc7a;
+            animation: fadeSlideUp 0.3s ease-out;
+        }
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .modal-close {
+            position: absolute;
+            right: 24px;
+            top: 20px;
+            font-size: 32px;
+            cursor: pointer;
+            color: #c0392b;
+            transition: 0.2s;
+            background: none;
+            border: none;
+            font-weight: bold;
+        }
+        .modal-close:hover {
+            transform: scale(1.2);
+            color: #e67e22;
+        }
+        .modal-img {
+            width: 100%;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 48px;
+            margin-bottom: 20px;
+            border: 3px solid #ffb46b;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal-img:hover {
+            opacity: 0.95;
+        }
+        .modal-title {
+            font-size: 2rem;
+            color: #c0392b;
+            margin-bottom: 12px;
+            font-weight: 800;
+        }
+        .modal-detail {
+            font-size: 1.2rem;
+            margin: 12px 0;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-bottom: 1px dashed #ffcf9a;
+            padding-bottom: 12px;
+        }
+        .modal-label {
+            font-weight: 700;
+            background: #ffddb0;
+            padding: 4px 14px;
+            border-radius: 30px;
+            color: #a3411b;
+        }
+        .modal-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .modal-price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #e67e22;
+            margin-top: 15px;
+            text-align: center;
+            background: #ffe3ca;
+            padding: 12px;
+            border-radius: 60px;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .close-modal-btn {
+            background: #e67e22;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Fullscreen image modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            flex-direction: column;
+        }
+        .full-image {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 32px;
+            box-shadow: 0 0 40px rgba(255,180,100,0.5);
+            animation: zoomFade 0.25s ease-out;
+        }
+        @keyframes zoomFade {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .close-image-btn {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            font-size: 48px;
+            color: white;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            text-shadow: 0 0 8px black;
+            transition: 0.2s;
+        }
+        .close-image-btn:hover {
+            transform: scale(1.2);
+            color: #ffa559;
+        }
+        .image-caption {
+            margin-top: 20px;
+            color: #ffddbb;
+            font-size: 1.2rem;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 20px;
+            border-radius: 60px;
+        }
+
+        .form-page, .login-page {
+            background: white;
+            border-radius: 48px;
+            padding: 40px;
+            max-width: 700px;
+            margin: 40px auto;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 100;
+        }
+
+        .form-page h2, .login-page h2 {
+            font-size: 2rem;
+            color: #e67e22;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 60px;
+            border: 1px solid #ffcd94;
+            font-size: 1rem;
+        }
+
+        .submit-btn {
+            background: #e67e22;
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 60px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .back-home {
+            display: inline-block;
+            margin-top: 20px;
+            background: #95a5a6;
+            color: white;
+            padding: 10px 22px;
+            border-radius: 40px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            background: #c0392b;
+            margin-left: 10px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #b87333;
+        }
+
+        .admin-badge {
+            background: #27ae60;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            margin-left: 15px;
+        }
+        
+        .delete-badge {
+            background: #e67e22;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            margin-left: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: #e67e22;
+        }
+
+        @media (max-width: 720px) {
+            .expense-card {
+                flex-direction: column;
+                text-align: center;
+            }
+            .hero-header h1 {
+                font-size: 2rem;
+            }
+            .filter-section {
+                flex-direction: column;
+            }
+            .total-header {
+                flex-direction: column;
+            }
+            .login-buttons-wrapper {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <!-- دوو دووگمەی لۆگین لە لای چەپ -->
+    <div class="login-buttons-wrapper" id="loginButtonsWrapper">
+        <button class="btn-login" id="loginMainBtn">🔐 Log In (Admin - زیادکردن)</button>
+        <button class="btn-login delete-login" id="loginDeleteBtn">🗑️ Log In (Delete - سڕینەوە)</button>
+    </div>
+    <div class="hero-header">
+        <h1>🍔🌭🍟 ICE POP 🍕🥙🍔</h1>
+        <p>خەرجی ڕۆژانەی چێشتخانە (خواردنی خێرا) | کلیک لەسەر کارت یان وێنە بکە بۆ بینینی وردەکاری</p>
+    </div>
+
+    <!-- کارتی کۆی گشتی + فلتەری ڕۆژانە -->
+    <div class="total-stats-section" id="totalStatsCard">
+        <div class="total-header">
+            <h2>💰 کۆی گشتی خەرجی: <span id="totalSumAmount" class="total-amount">0</span> دینار</h2>
+            <div class="total-badge" id="totalRangeLabel">هەموو خەرجیەکان</div>
+        </div>
+        <div class="range-filters">
+            <button data-days="5" class="range-btn">📆 5 ڕۆژی کۆتایی</button>
+            <button data-days="10" class="range-btn">📆 10 ڕۆژی کۆتایی</button>
+            <button data-days="15" class="range-btn">📆 15 ڕۆژی کۆتایی</button>
+            <button data-days="20" class="range-btn">📆 20 ڕۆژی کۆتایی</button>
+            <div class="custom-range">
+                <span>✏️ ڕۆژ:</span>
+                <input type="number" id="customDaysInput" min="1" max="365" placeholder="ژمارە">
+                <button id="applyCustomRange" class="apply-range">فلتەر</button>
+            </div>
+            <button id="resetTotalFilter" class="range-btn" style="background:#e1b992;">🏠 کۆی گشتی هەموو</button>
+        </div>
+    </div>
+
+    <div class="filter-section">
+        <div class="date-filter">
+            <label>📅 بەروار بۆ فلتەر:</label>
+            <input type="date" id="filterDate">
+        </div>
+        <div class="filter-buttons">
+            <button id="todayBtn" class="btn-filter active">📆 لیستی خەرجی ئەمڕۆ</button>
+            <button id="allBtn" class="btn-filter">🗂️ هەموو خەرجی کۆنەکان</button>
+        </div>
+    </div>
+
+    <div id="expensesList" class="expenses-grid">
+        <div class="loading">🔄 بارکردنی زانیارییەکان لە Firebase...</div>
+    </div>
+    <footer>🔥 ICE POP-ســیــســتــەمــێــک بــۆ خــەرجــی ڕۆژانــەی چــێــشــتــخــانــەی 
+       <br> BY: Zhyar</br>
+    </footer>
+    
+
+</div>
+
+<!-- Modal info structure -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" id="closeModalBtn">&times;</button>
+        <img id="modalImage" class="modal-img" src="https://placehold.co/400x200?text=🍔" alt="وێنە">
+        <div class="modal-title" id="modalTitle">نــاوی خــەرجــکــار یــان مــیــوان:</div>
+        <div class="modal-detail"><span class="modal-label">🍽️نــاوی کاڵا یــان خــواردن:</span> <span class="modal-value" id="modalItemName">---</span></div>
+        <div class="modal-detail"><span class="modal-label">💰 نرخ (دینار):</span> <span class="modal-value" id="modalPrice">0</span></div>
+        <div class="modal-detail"><span class="modal-label">📅 بەروار:</span> <span class="modal-value" id="modalDate">----</span></div>
+        <div class="modal-detail"><span class="modal-label">🕒 کاتی تۆمارکردن:</span> <span class="modal-value" id="modalTime">----</span></div>
+        <div class="modal-price" id="modalFormattedPrice">💰 0 IQD</div>
+        <div class="modal-footer">
+            <button class="close-modal-btn" id="modalFooterBtn">داخستن</button>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen image modal for big picture -->
+<div id="fullImageModal" class="image-modal">
+    <button class="close-image-btn" id="closeImageModalBtn">✖</button>
+    <img id="fullScreenImage" class="full-image" src="" alt="وێنەی گەورە">
+    <div class="image-caption" id="imageCaption">وێنەی کاڵا</div>
+</div>
+
+<script>
+    // ========== Firebase Config ==========
+    const firebaseConfig = {
+        apiKey: "AIzaSyDpMvqqiMJF_bcoAOEC4gC9CJrvdDlJVMA",
+        authDomain: "icepop-3ed45.firebaseapp.com",
+        projectId: "icepop-3ed45",
+        storageBucket: "icepop-3ed45.firebasestorage.app",
+        messagingSenderId: "635220816671",
+        appId: "1:635220816671:web:71a452ec17bacd3ee0b62a",
+        measurementId: "G-GLZ0MJXGL9"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    const COLLECTION_NAME = "xarje";
+    const DOC_ID = "1CRssfrJepDusoQQcMh";
+    
+    let isAdmin = false;        // بۆ زیادکردن (user:pop pass:32p)
+    let isDeleteMode = false;   // بۆ سڕینەوە (user:n4 pass:d4)
+    let currentFilterMode = "today"; 
+    let currentTotalRangeMode = "all";
+    let totalDaysValue = null;
+
+    function getTodayStr() {
+        return new Date().toISOString().slice(0, 10);
+    }
+    
+    async function fetchExpenses() {
+        try {
+            const docRef = db.collection(COLLECTION_NAME).doc(DOC_ID);
+            const docSnap = await docRef.get();
+            if (docSnap.exists) {
+                const data = docSnap.data();
+                return data.items || [];
+            } else {
+                await docRef.set({ items: [] });
+                return [];
+            }
+        } catch (error) {
+            console.error("Error fetching expenses:", error);
+            return [];
+        }
+    }
+    
+    async function saveExpenses(expenses) {
+        try {
+            await db.collection(COLLECTION_NAME).doc(DOC_ID).set({ items: expenses });
+            return true;
+        } catch (error) {
+            console.error("Error saving expenses:", error);
+            return false;
+        }
+    }
+    
+    async function addExpense(expense) {
+        const expenses = await fetchExpenses();
+        expense.id = Date.now() + "_" + Math.floor(Math.random() * 10000);
+        expense.createdAt = new Date().toISOString();
+        expenses.push(expense);
+        await saveExpenses(expenses);
+        await renderExpensesAndTotal();
+    }
+    
+    async function deleteExpense(id) {
+        let expenses = await fetchExpenses();
+        expenses = expenses.filter(exp => exp.id != id);
+        await saveExpenses(expenses);
+        await renderExpensesAndTotal();
+    }
+    
+    function computeTotalByDays(expenses, days) {
+        if (!days) return expenses.reduce((sum, e) => sum + (Number(e.nrx) || 0), 0);
+        const now = new Date();
+        const cutoff = new Date();
+        cutoff.setDate(now.getDate() - days);
+        const filtered = expenses.filter(exp => {
+            if (!exp.createdAt) return false;
+            const expDate = new Date(exp.createdAt);
+            return expDate >= cutoff;
+        });
+        return filtered.reduce((sum, e) => sum + (Number(e.nrx) || 0), 0);
+    }
+    
+    async function updateTotalCard(expensesAll) {
+        let total = 0;
+        let label = "";
+        if (currentTotalRangeMode === "all") {
+            total = expensesAll.reduce((sum, e) => sum + (Number(e.nrx) || 0), 0);
+            label = "کۆی گشتی هەموو خەرجیەکان";
+        } else if (currentTotalRangeMode === "days" && totalDaysValue !== null) {
+            total = computeTotalByDays(expensesAll, totalDaysValue);
+            label = `کۆی دوایین ${totalDaysValue} ڕۆژ`;
+        }
+        document.getElementById('totalSumAmount').innerText = total.toLocaleString();
+        document.getElementById('totalRangeLabel').innerText = label;
+    }
+    
+    function showFullscreenImage(imgUrl, title) {
+        const fullModal = document.getElementById('fullImageModal');
+        const fullImg = document.getElementById('fullScreenImage');
+        const caption = document.getElementById('imageCaption');
+        fullImg.src = imgUrl;
+        caption.innerText = title || "وێنەی خواردن";
+        fullModal.style.display = "flex";
+        fullImg.onerror = () => {
+            fullImg.src = "https://placehold.co/800x500?text=🍔+وێنە+نییە";
+            caption.innerText = "وێنە بەردەست نییە";
+        };
+    }
+    
+    function closeFullscreenImage() {
+        document.getElementById('fullImageModal').style.display = "none";
+    }
+    
+    function showExpenseInfo(expense) {
+        const modal = document.getElementById('infoModal');
+        const modalImg = document.getElementById('modalImage');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalItemName = document.getElementById('modalItemName');
+        const modalPriceSpan = document.getElementById('modalPrice');
+        const modalDateSpan = document.getElementById('modalDate');
+        const modalTimeSpan = document.getElementById('modalTime');
+        const modalFormatted = document.getElementById('modalFormattedPrice');
+        
+        let imgUrl = expense.wena && expense.wena.trim() !== "" ? expense.wena : "https://placehold.co/400x200?text=🍔+خواردنی+خێرا";
+        modalImg.src = imgUrl;
+        modalImg.onerror = () => { modalImg.src = "https://placehold.co/400x200?text=🍔+خواردن"; };
+        
+        modalImg.onclick = (e) => {
+            e.stopPropagation();
+            showFullscreenImage(modalImg.src, expense.nawk || "وێنە");
+        };
+        
+        modalTitle.innerText = escapeHtml(expense.naw || "بەکارهێنەر");
+        modalItemName.innerText = escapeHtml(expense.nawk || "بێ ناو");
+        const priceNumber = Number(expense.nrx) || 0;
+        modalPriceSpan.innerText = priceNumber.toLocaleString();
+        modalFormatted.innerText = `💰 ${priceNumber.toLocaleString()} دیناری عێراقی`;
+        
+        let dateObj = new Date(expense.createdAt);
+        if (isNaN(dateObj.getTime())) {
+            modalDateSpan.innerText = "بەروار نییە";
+            modalTimeSpan.innerText = "---";
+        } else {
+            modalDateSpan.innerText = dateObj.toLocaleDateString('ku-IR');
+            modalTimeSpan.innerText = dateObj.toLocaleTimeString('ku-IR');
+        }
+        
+        modal.style.display = "flex";
+    }
+    
+    function closeModal() {
+        document.getElementById('infoModal').style.display = "none";
+    }
+    
+    async function renderExpenses() {
+        const container = document.getElementById('expensesList');
+        container.innerHTML = '<div class="loading">⏳ بارکردنی داتا...</div>';
+        
+        let allExpenses = await fetchExpenses();
+        let filtered = [];
+        const todayStr = getTodayStr();
+        const selectedDate = document.getElementById('filterDate').value;
+        
+        if (currentFilterMode === "today") {
+            filtered = allExpenses.filter(exp => {
+                const expDate = exp.createdAt ? exp.createdAt.slice(0, 10) : "";
+                return expDate === todayStr;
+            });
+            if (filtered.length === 0) {
+                filtered = [...allExpenses].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            } else {
+                filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            }
+        } else {
+            filtered = [...allExpenses].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            if (selectedDate && currentFilterMode === "all") {
+                filtered = filtered.filter(exp => exp.createdAt?.slice(0, 10) === selectedDate);
+            }
+        }
+        
+        if (filtered.length === 0) {
+            container.innerHTML = `<div style="background:#fff2e6; border-radius:48px; padding:40px; text-align:center;">😢 هیچ خەرجیەک نەدۆزرایەوە. تکایە خەرجی نوێ تۆمار بکە.</div>`;
+            return;
+        }
+        
+        // ئەگەر delete mode بێت، دوگمەی سڕینەوە نیشان بدە
+        const showDeleteButtons = isDeleteMode;
+        
+        container.innerHTML = filtered.map(exp => {
+            const imageUrl = exp.wena && exp.wena.trim() !== "" ? escapeHtml(exp.wena) : "https://placehold.co/80x80?text=🍔";
+            return `
+            <div class="expense-card" data-id="${exp.id}" data-exp-data='${JSON.stringify(exp).replace(/'/g, "&#39;")}'>
+                <img class="expense-img" src="${imageUrl}" alt="وێنەی کاڵا" data-imgurl="${imageUrl}" data-itemname="${escapeHtml(exp.nawk)}" onerror="this.src='https://placehold.co/80x80?text=🍔'">
+                <div class="expense-info">
+                    <h3>${escapeHtml(exp.naw)}</h3>
+                    <p><strong>ناوی کاڵا:</strong> ${escapeHtml(exp.nawk)}</p>
+                    <p><strong>نرخ:</strong> ${Number(exp.nrx).toLocaleString()} دینار</p>
+                    <small>📅 ${exp.createdAt ? new Date(exp.createdAt).toLocaleDateString('ku-IR') : 'بەروار نییە'}</small>
+                </div>
+                <div class="expense-price">💰 ${Number(exp.nrx).toLocaleString()} IQD</div>
+                ${showDeleteButtons ? `<button class="delete-btn" onclick="event.stopPropagation(); handleDelete('${exp.id}')">🗑️ بسڕەوە</button>` : ''}
+            </div>
+        `}).join('');
+        
+        document.querySelectorAll('.expense-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if(e.target.classList && e.target.classList.contains('delete-btn')) return;
+                const rawData = card.getAttribute('data-exp-data');
+                if(rawData) {
+                    try {
+                        const expenseObj = JSON.parse(rawData);
+                        showExpenseInfo(expenseObj);
+                    } catch(e) { console.warn(e); }
+                }
+            });
+            
+            const imgElem = card.querySelector('.expense-img');
+            if(imgElem) {
+                imgElem.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    let imgUrl = imgElem.getAttribute('data-imgurl') || imgElem.src;
+                    let itemName = imgElem.getAttribute('data-itemname') || 'وێنە';
+                    showFullscreenImage(imgUrl, itemName);
+                });
+            }
+        });
+    }
+    
+    async function renderExpensesAndTotal() {
+        await renderExpenses();
+        const allItems = await fetchExpenses();
+        await updateTotalCard(allItems);
+    }
+    
+    window.handleDelete = async function(id) {
+        if (confirm('دڵنیای لە سڕینەوەی ئەم خەرجییە؟')) {
+            await deleteExpense(id);
+        }
+    };
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ========== دوو جۆری لاگین ==========
+    function showMainLoginPage() {
+        document.getElementById('app').style.display = 'none';
+        
+        const loginDiv = document.createElement('div');
+        loginDiv.id = 'loginPage';
+        loginDiv.className = 'login-page';
+        loginDiv.innerHTML = `
+            <h2>🔑 چوونە ژوورەوەی بەڕێوەبەر (زیادکردن)</h2>
+            <div class="form-group">
+                <label>👤 ناوی بەکارهێنەر (User)</label>
+                <input type="text" id="loginUser" placeholder="user">
+            </div>
+            <div class="form-group">
+                <label>🔒 پاسۆرد (Password)</label>
+                <input type="password" id="loginPass" placeholder="password">
+            </div>
+            <button id="submitLogin" class="submit-btn">✅ لاگین کردن</button>
+            <button id="closeLogin" class="back-home">🏠 گەڕانەوە بۆ هۆم</button>
+        `;
+        document.body.appendChild(loginDiv);
+        
+        document.getElementById('submitLogin').addEventListener('click', () => {
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            
+            if (user === 'pop' && pass === '32p') {
+                isAdmin = true;
+                isDeleteMode = false;
+                alert('✅ لاگین سەرکەوتوو! ئێستا دەتوانیت خەرجی زیاد بکەیت.');
+                loginDiv.remove();
+                document.getElementById('app').style.display = 'block';
+                updateAdminUI();
+                renderExpensesAndTotal();
+                showExpenseForm();
+            } else {
+                alert('❌ هەڵە! user=pop و password=32p');
+            }
+        });
+        
+        document.getElementById('closeLogin').addEventListener('click', () => {
+            loginDiv.remove();
+            document.getElementById('app').style.display = 'block';
+        });
+    }
+    
+    function showDeleteLoginPage() {
+        document.getElementById('app').style.display = 'none';
+        
+        const loginDiv = document.createElement('div');
+        loginDiv.id = 'loginPageDelete';
+        loginDiv.className = 'login-page';
+        loginDiv.innerHTML = `
+            <h2>🗑️ چوونە ژوورەوە بۆ سڕینەوە</h2>
+            <div class="form-group">
+                <label>👤 ناوی بەکارهێنەر (User)</label>
+                <input type="text" id="loginUserDelete" placeholder="user">
+            </div>
+            <div class="form-group">
+                <label>🔒 پاسۆرد (Password)</label>
+                <input type="password" id="loginPassDelete" placeholder="password">
+            </div>
+            <button id="submitLoginDelete" class="submit-btn">✅ لاگین کردن بۆ سڕینەوە</button>
+            <button id="closeLoginDelete" class="back-home">🏠 گەڕانەوە بۆ هۆم</button>
+        `;
+        document.body.appendChild(loginDiv);
+        
+        document.getElementById('submitLoginDelete').addEventListener('click', () => {
+            const user = document.getElementById('loginUserDelete').value;
+            const pass = document.getElementById('loginPassDelete').value;
+            
+            if (user === 'n4' && pass === 'd4') {
+                isDeleteMode = true;
+                isAdmin = false;
+                alert('✅ لاگین سەرکەوتوو! ئێستا دەتوانیت خەرجیەکان بسڕیتەوە.');
+                loginDiv.remove();
+                document.getElementById('app').style.display = 'block';
+                updateAdminUI();
+                renderExpensesAndTotal();
+            } else {
+                alert('❌ هەڵە! user=n4 و password=d4');
+            }
+        });
+        
+        document.getElementById('closeLoginDelete').addEventListener('click', () => {
+            loginDiv.remove();
+            document.getElementById('app').style.display = 'block';
+        });
+    }
+    
+    function updateAdminUI() {
+        const wrapper = document.getElementById('loginButtonsWrapper');
+        if (isAdmin) {
+            wrapper.innerHTML = `
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%;">
+                    <span class="admin-badge">✅ ئەدمینی زیادکردن چالاکە</span>
+                    <button class="btn-login" id="addExpenseBtn">➕ تۆمارکردنی خەرجی نوێ</button>
+                    <button class="btn-login logout-btn" id="logoutBtn">🚪 Log Out</button>
+                </div>
+            `;
+            document.getElementById('addExpenseBtn')?.addEventListener('click', showExpenseForm);
+            document.getElementById('logoutBtn')?.addEventListener('click', () => {
+                isAdmin = false;
+                isDeleteMode = false;
+                updateAdminUI();
+                renderExpensesAndTotal();
+                alert('لە سیستەم دەرچوویت.');
+                // دووبارە دوو دووگمەکە دروست بکەرەوە
+                resetLoginButtons();
+            });
+        } else if (isDeleteMode) {
+            wrapper.innerHTML = `
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%;">
+                    <span class="delete-badge">🗑️ مۆدی سڕینەوە چالاکە</span>
+                    <button class="btn-login logout-btn" id="logoutDeleteBtn">🚪 Log Out (سڕینەوە)</button>
+                </div>
+            `;
+            document.getElementById('logoutDeleteBtn')?.addEventListener('click', () => {
+                isDeleteMode = false;
+                isAdmin = false;
+                updateAdminUI();
+                renderExpensesAndTotal();
+                alert('لە مۆدی سڕینەوە دەرچوویت.');
+                resetLoginButtons();
+            });
+        } else {
+            resetLoginButtons();
+        }
+    }
+    
+    function resetLoginButtons() {
+        const wrapper = document.getElementById('loginButtonsWrapper');
+        wrapper.innerHTML = `
+            <button class="btn-login" id="loginMainBtn">🔐 Log In (Admin - زیادکردن)</button>
+            <button class="btn-login delete-login" id="loginDeleteBtn">🗑️ Log In (Delete - سڕینەوە)</button>
+        `;
+        document.getElementById('loginMainBtn')?.addEventListener('click', showMainLoginPage);
+        document.getElementById('loginDeleteBtn')?.addEventListener('click', showDeleteLoginPage);
+    }
+    
+    function showExpenseForm() {
+        if (!isAdmin) {
+            alert('تکایە یەکەمجار لاگین بکە بۆ زیادکردنی خەرجی (pop / 32p)');
+            return;
+        }
+        document.getElementById('app').style.display = 'none';
+        
+        const formDiv = document.createElement('div');
+        formDiv.id = 'expenseForm';
+        formDiv.className = 'form-page';
+        formDiv.innerHTML = `
+            <h2>📝 تۆمارکردنی خەرجی نوێ</h2>
+            <div class="form-group">
+                <label>1. نــاوی خــەرجــکــار یــان مــیــوان:</label>
+                <input id="formNaw" placeholder="نمونە: ڕەزا یان ئارام">
+            </div>
+            <div class="form-group">
+                <label>2. نــاوی کاڵا یــان خــواردن:</label>
+                <input id="formNawk" placeholder="نمونە: بەرگەر, پیزا, فرایز, هۆتدۆگ">
+            </div>
+            <div class="form-group">
+                <label>3. نرخەکەی (دینار):</label>
+                <input id="formNrx" type="number" placeholder="نرخ بە دینار">
+            </div>
+            <div class="form-group">
+                <label>4. وێنە (لینکی وێنە):</label>
+                <input id="formWena" placeholder="https://example.com/food.jpg">
+            </div>
+            <button id="saveExpense" class="submit-btn">💾 ناردن و تۆمارکردن</button>
+            <button id="closeForm" class="back-home">🏠 گەڕانەوە بۆ هۆم</button>
+        `;
+        document.body.appendChild(formDiv);
+        
+        document.getElementById('saveExpense').addEventListener('click', async () => {
+            const naw = document.getElementById('formNaw').value.trim();
+            const nawk = document.getElementById('formNawk').value.trim();
+            const nrx = document.getElementById('formNrx').value.trim();
+            const wena = document.getElementById('formWena').value.trim();
+            
+            if (!naw || !nawk || !nrx) {
+                alert('تکایە ناو، ناوی کاڵا و نرخ پڕ بکەوە');
+                return;
+            }
+            
+            await addExpense({
+                naw: naw,
+                nawk: nawk,
+                nrx: Number(nrx),
+                wena: wena || "https://placehold.co/200x150?text=🍔"
+            });
+            
+            alert('✅ خەرجیەکە بە سەرکەوتوویی تۆمار کرا!');
+            formDiv.remove();
+            document.getElementById('app').style.display = 'block';
+            await renderExpensesAndTotal();
+        });
+        
+        document.getElementById('closeForm').addEventListener('click', () => {
+            formDiv.remove();
+            document.getElementById('app').style.display = 'block';
+        });
+    }
+    
+    function bindModalEvents() {
+        const modal = document.getElementById('infoModal');
+        const closeBtn = document.getElementById('closeModalBtn');
+        const footerBtn = document.getElementById('modalFooterBtn');
+        if(closeBtn) closeBtn.onclick = closeModal;
+        if(footerBtn) footerBtn.onclick = closeModal;
+        window.onclick = function(e) {
+            if(e.target === modal) closeModal();
+            const fullModal = document.getElementById('fullImageModal');
+            if(e.target === fullModal) closeFullscreenImage();
+        };
+        
+        const closeImageBtn = document.getElementById('closeImageModalBtn');
+        if(closeImageBtn) closeImageBtn.onclick = closeFullscreenImage;
+    }
+    
+    function setupRangeControls() {
+        document.querySelectorAll('.range-btn[data-days]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const days = parseInt(btn.getAttribute('data-days'));
+                currentTotalRangeMode = "days";
+                totalDaysValue = days;
+                const allExp = await fetchExpenses();
+                await updateTotalCard(allExp);
+                document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const resetBtn = document.getElementById('resetTotalFilter');
+                if(resetBtn) resetBtn.classList.remove('active');
+            });
+        });
+        
+        const applyCustom = document.getElementById('applyCustomRange');
+        if(applyCustom) {
+            applyCustom.addEventListener('click', async () => {
+                const daysInput = document.getElementById('customDaysInput');
+                let daysVal = parseInt(daysInput.value);
+                if(isNaN(daysVal) || daysVal <= 0) daysVal = 7;
+                currentTotalRangeMode = "days";
+                totalDaysValue = daysVal;
+                const allExp = await fetchExpenses();
+                await updateTotalCard(allExp);
+                document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+                const resetBtn = document.getElementById('resetTotalFilter');
+                if(resetBtn) resetBtn.classList.remove('active');
+            });
+        }
+        
+        const resetTotal = document.getElementById('resetTotalFilter');
+        if(resetTotal) {
+            resetTotal.addEventListener('click', async () => {
+                currentTotalRangeMode = "all";
+                totalDaysValue = null;
+                const allExp = await fetchExpenses();
+                await updateTotalCard(allExp);
+                document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+                resetTotal.classList.add('active');
+            });
+        }
+    }
+    
+    // ========== Event Listeners ==========
+    document.getElementById('todayBtn').addEventListener('click', () => {
+        currentFilterMode = "today";
+        document.getElementById('todayBtn').classList.add('active');
+        document.getElementById('allBtn').classList.remove('active');
+        renderExpensesAndTotal();
+    });
+    
+    document.getElementById('allBtn').addEventListener('click', () => {
+        currentFilterMode = "all";
+        document.getElementById('allBtn').classList.add('active');
+        document.getElementById('todayBtn').classList.remove('active');
+        renderExpensesAndTotal();
+    });
+    
+    document.getElementById('filterDate').addEventListener('change', () => {
+        if (currentFilterMode === "all") {
+            renderExpensesAndTotal();
+        }
+    });
+    
+    document.getElementById('filterDate').value = getTodayStr();
+    
+    bindModalEvents();
+    setupRangeControls();
+    renderExpensesAndTotal();
+    resetLoginButtons(); // دوو دووگمەکە دەردەکەوێت
+</script>
+</body>
+</html>
